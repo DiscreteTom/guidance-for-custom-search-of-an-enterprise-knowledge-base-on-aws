@@ -255,6 +255,7 @@ class LambdaVPCStack(Stack):
             self.APPSYNC_API_KEY = appsync_api.api_key
             langchain_qa_func.add_environment("APPSYNC_ENDPOINT", self.APPSYNC_ENDPOINT)
             langchain_qa_func.add_environment("APPSYNC_API_KEY", self.APPSYNC_API_KEY)
+            cdk.CfnOutput(self, 'private_appsync_api', value=self.APPSYNC_ENDPOINT, export_name='Private AppSync API')
         else:
             _websocket_policy = _iam.PolicyStatement(
                 actions=[
