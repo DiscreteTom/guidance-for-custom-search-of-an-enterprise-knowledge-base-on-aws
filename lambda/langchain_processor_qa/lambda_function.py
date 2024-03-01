@@ -9,6 +9,7 @@ import ast
 from smart_search_qa import SmartSearchQA
 from prompt import *
 from streaming_callback_handler import MyStreamingHandler
+import requests
 
 lam = boto3.client('lambda')
 
@@ -17,6 +18,8 @@ LLM_ENDPOINT_NAME = os.environ.get('llm_endpoint_name')
 INDEX = os.environ.get('index')
 HOST = os.environ.get('host')
 LANGUAGE = os.environ.get('language')
+APPSYNC_ENDPOINT = os.environ.get('APPSYNC_ENDPOINT')
+APPSYNC_API_KEY = os.environ.get('APPSYNC_API_KEY')
 region = os.environ.get('AWS_REGION')
 zilliz_endpoint = os.environ.get('zilliz_endpoint')
 zilliz_token = os.environ.get('zilliz_token')
@@ -573,6 +576,15 @@ def moderate_content(function_name, access_token, content):
 
 def sendWebSocket(msgbody,event):
     connectionId = str(event.get('requestContext', {}).get('connectionId'))
+
+    if connectionId.startswith('private'):
+        api_res = requests.post(APPSYNC_ENDPOINT, headers = { 'x-api-key': APPSYNC_API_KEY }, json = {
+            'query': 'publish',
+            'variables': { "name": connectionId, 'data': msgbody },
+        })
+        print('api_res', api_res)
+        return
+
     if region.find('cn') >=0 :
         endpoint_url = F"https://{domain_name}.execute-api.{region}.amazonaws.com.cn/{stage}"
     else:

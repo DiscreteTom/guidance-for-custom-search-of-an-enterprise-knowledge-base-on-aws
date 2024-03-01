@@ -6,6 +6,8 @@ from collections import defaultdict
 from requests_aws4auth import AWS4Auth
 import os
 
+APPSYNC_ENDPOINT = os.environ.get('APPSYNC_ENDPOINT')
+APPSYNC_API_KEY = os.environ.get('APPSYNC_API_KEY')
 KNN_ENDPOINT_NAME = 'huggingface-inference-eb'
 GTM_ENDPOINT_NAME = 'pytorch-inference-llm-v1'
 host =  os.environ.get('host') 
@@ -200,6 +202,14 @@ def lambda_handler(event, context):
         'suggestion_answer': suggestion_answer
       })
     # return response
+    if connectionId.startswith('private'):
+        print('appsync post')
+        api_res = requests.post(APPSYNC_ENDPOINT, headers = { 'x-api-key': APPSYNC_API_KEY }, json = {
+            'query': 'publish',
+            'variables': { "name": connectionId, 'data': response['body'] },
+        })
+        print('api_res',api_res)
+        return
     print('api_gw post')
     connectionId = event.get('requestContext',{}).get('connectionId')
     apigw_management = boto3.client('apigatewaymanagementapi',

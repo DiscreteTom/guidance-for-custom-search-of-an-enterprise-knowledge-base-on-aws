@@ -6,6 +6,12 @@ import boto3
 import json
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.schema import Generation, LLMResult
+import requests
+import os
+
+APPSYNC_ENDPOINT = os.environ.get('APPSYNC_ENDPOINT')
+APPSYNC_API_KEY = os.environ.get('APPSYNC_API_KEY')
+
 class MyStreamingHandler(StreamingStdOutCallbackHandler ):
     def __init__(self, connectionId: str, domainName: str, region: str,stage:str):
 
@@ -32,6 +38,15 @@ class MyStreamingHandler(StreamingStdOutCallbackHandler ):
 
         }
         response_body = json.dumps(streaming_answer)
+
+        if self.connectionId.startswith('private'):
+            api_res = requests.post(APPSYNC_ENDPOINT, headers = { 'x-api-key': APPSYNC_API_KEY }, json = {
+                'query': 'publish',
+                'variables': { "name": self.connectionId, 'data': response_body },
+            })
+            self.api_res = api_res
+            return
+
         self.api_res = self.apigw_management.post_to_connection(ConnectionId=self.connectionId, Data=response_body)
     def on_llm_end(self, response: LLMResult, **kwargs: Any) -> None:
         return
