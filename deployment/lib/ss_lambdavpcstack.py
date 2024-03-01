@@ -202,108 +202,119 @@ class LambdaVPCStack(Stack):
                                          removal_policy=RemovalPolicy.DESTROY
                                          )
 
-        _websocket_policy = _iam.PolicyStatement(
-            actions=[
-                'lambda:*',
-                'apigateway:*',
-                'dynamodb:*',
-                'logs:*',
-                'ec2:CreateNetworkInterface',
-                'ec2:DescribeNetworkInterfaces',
-                'ec2:DeleteNetworkInterface',
-            ],
-            resources=['*']  
-        )
-        websocket_role = _iam.Role(
-            self, 'websocket_role',
-            assumed_by=_iam.ServicePrincipal('lambda.amazonaws.com')
-        )
-        websocket_role.add_to_policy(_websocket_policy)
+        if self.node.try_get_context("private_appsync"):
+            appsync_api = cdk.aws_appsync.GraphqlApi(self, 'AppSyncAPI', 
+                name=self.node.try_get_context("appsync"),
+                definition=cdk.aws_appsync.Definition.from_file("appsync.graphql"),
+                visibility=cdk.aws_appsync.Visibility.PRIVATE
+                )
+            self.APPSYNC_ENDPOINT = appsync_api.graphql_url
+            self.APPSYNC_API_KEY = appsync_api.api_key
+            langchain_qa_func.add_environment("APPSYNC_ENDPOINT", self.APPSYNC_ENDPOINT)
+            langchain_qa_func.add_environment("APPSYNC_API_KEY", self.APPSYNC_API_KEY)
+        else:
+            _websocket_policy = _iam.PolicyStatement(
+                actions=[
+                    'lambda:*',
+                    'apigateway:*',
+                    'dynamodb:*',
+                    'logs:*',
+                    'ec2:CreateNetworkInterface',
+                    'ec2:DescribeNetworkInterfaces',
+                    'ec2:DeleteNetworkInterface',
+                ],
+                resources=['*']  
+            )
+            websocket_role = _iam.Role(
+                self, 'websocket_role',
+                assumed_by=_iam.ServicePrincipal('lambda.amazonaws.com')
+            )
+            websocket_role.add_to_policy(_websocket_policy)
 
-        websocket_role.add_managed_policy(
-            _iam.ManagedPolicy.from_aws_managed_policy_name("AmazonDynamoDBFullAccess")
-        )
+            websocket_role.add_managed_policy(
+                _iam.ManagedPolicy.from_aws_managed_policy_name("AmazonDynamoDBFullAccess")
+            )
 
-        table_name = websocket_table.table_name
+            table_name = websocket_table.table_name
 
-        connect_function_name = 'websocket_connect'
-        websocketconnect = _lambda.Function(
-            self, connect_function_name,
-            function_name=connect_function_name,
-            runtime=_lambda.Runtime.PYTHON_3_9,
-            role=websocket_role,
-            code=_lambda.Code.from_asset('../lambda/' + connect_function_name),
-            handler='lambda_function' + '.lambda_handler',
-            vpc=vpc,
-            vpc_subnets=vpc_subnets_selection,
-        )
-        websocketconnect.add_environment("TABLE_NAME", table_name)
+            connect_function_name = 'websocket_connect'
+            websocketconnect = _lambda.Function(
+                self, connect_function_name,
+                function_name=connect_function_name,
+                runtime=_lambda.Runtime.PYTHON_3_9,
+                role=websocket_role,
+                code=_lambda.Code.from_asset('../lambda/' + connect_function_name),
+                handler='lambda_function' + '.lambda_handler',
+                vpc=vpc,
+                vpc_subnets=vpc_subnets_selection,
+            )
+            websocketconnect.add_environment("TABLE_NAME", table_name)
 
-        disconnect_function_name = 'websocket_disconnect'
-        websocketdisconnect = _lambda.Function(
-            self, disconnect_function_name,
-            function_name=disconnect_function_name,
-            runtime=_lambda.Runtime.PYTHON_3_9,
-            role=websocket_role,
-            code=_lambda.Code.from_asset('../lambda/' + disconnect_function_name),
-            handler='lambda_function' + '.lambda_handler',
-            vpc=vpc,
-            vpc_subnets=vpc_subnets_selection,
-        )
-        websocketdisconnect.add_environment("TABLE_NAME", table_name)
+            disconnect_function_name = 'websocket_disconnect'
+            websocketdisconnect = _lambda.Function(
+                self, disconnect_function_name,
+                function_name=disconnect_function_name,
+                runtime=_lambda.Runtime.PYTHON_3_9,
+                role=websocket_role,
+                code=_lambda.Code.from_asset('../lambda/' + disconnect_function_name),
+                handler='lambda_function' + '.lambda_handler',
+                vpc=vpc,
+                vpc_subnets=vpc_subnets_selection,
+            )
+            websocketdisconnect.add_environment("TABLE_NAME", table_name)
 
-        default_function_name = 'websocket_default'
-        websocketdefault = _lambda.Function(
-            self, default_function_name,
-            function_name=default_function_name,
-            runtime=_lambda.Runtime.PYTHON_3_9,
-            role=websocket_role,
-            code=_lambda.Code.from_asset('../lambda/' + disconnect_function_name),
-            handler='lambda_function' + '.lambda_handler',
-            vpc=vpc,
-            vpc_subnets=vpc_subnets_selection,
-        )
-        websocketdefault.add_environment("TABLE_NAME", table_name)
+            default_function_name = 'websocket_default'
+            websocketdefault = _lambda.Function(
+                self, default_function_name,
+                function_name=default_function_name,
+                runtime=_lambda.Runtime.PYTHON_3_9,
+                role=websocket_role,
+                code=_lambda.Code.from_asset('../lambda/' + disconnect_function_name),
+                handler='lambda_function' + '.lambda_handler',
+                vpc=vpc,
+                vpc_subnets=vpc_subnets_selection,
+            )
+            websocketdefault.add_environment("TABLE_NAME", table_name)
 
-        search_function_name = 'websocket_search'
-        websocketsearch = _lambda.Function(
-            self, search_function_name,
-            function_name=search_function_name,
-            runtime=_lambda.Runtime.PYTHON_3_9,
-            role=websocket_role,
-            code=_lambda.Code.from_asset('../lambda/' + search_function_name),
-            handler='lambda_function' + '.lambda_handler',
-            vpc=vpc,
-            vpc_subnets=vpc_subnets_selection,
-        )
-        websocketsearch.add_environment("TABLE_NAME", table_name)
-        websocketsearch.add_environment("DIR_NAME", "search")
+            search_function_name = 'websocket_search'
+            websocketsearch = _lambda.Function(
+                self, search_function_name,
+                function_name=search_function_name,
+                runtime=_lambda.Runtime.PYTHON_3_9,
+                role=websocket_role,
+                code=_lambda.Code.from_asset('../lambda/' + search_function_name),
+                handler='lambda_function' + '.lambda_handler',
+                vpc=vpc,
+                vpc_subnets=vpc_subnets_selection,
+            )
+            websocketsearch.add_environment("TABLE_NAME", table_name)
+            websocketsearch.add_environment("DIR_NAME", "search")
 
-        web_socket_api = apigwv2.WebSocketApi(self, "websocketapi")
-        apigwv2.WebSocketStage(self, "prod",
-                               web_socket_api=web_socket_api,
-                               stage_name="prod",
-                               auto_deploy=True
-                               )
-        web_socket_api.add_route("search",
-                                 integration=WebSocketLambdaIntegration("SearchIntegration", websocketsearch)
-                                 )
-        web_socket_api.add_route("$connect",
-                                 integration=WebSocketLambdaIntegration("SearchIntegration", websocketconnect)
-                                 )
-        web_socket_api.add_route("$disconnect",
-                                 integration=WebSocketLambdaIntegration("SearchIntegration", websocketdisconnect)
-                                 )
-        web_socket_api.add_route("$default",
-                                 integration=WebSocketLambdaIntegration("SearchIntegration", websocketdefault)
-                                 )
+            web_socket_api = apigwv2.WebSocketApi(self, "websocketapi")
+            apigwv2.WebSocketStage(self, "prod",
+                                web_socket_api=web_socket_api,
+                                stage_name="prod",
+                                auto_deploy=True
+                                )
+            web_socket_api.add_route("search",
+                                    integration=WebSocketLambdaIntegration("SearchIntegration", websocketsearch)
+                                    )
+            web_socket_api.add_route("$connect",
+                                    integration=WebSocketLambdaIntegration("SearchIntegration", websocketconnect)
+                                    )
+            web_socket_api.add_route("$disconnect",
+                                    integration=WebSocketLambdaIntegration("SearchIntegration", websocketdisconnect)
+                                    )
+            web_socket_api.add_route("$default",
+                                    integration=WebSocketLambdaIntegration("SearchIntegration", websocketdefault)
+                                    )
 
-        # langchain_qa_func加wss gw 环境变量
-        langchain_qa_func.add_environment("api_gw", web_socket_api.api_id)
-        # cfn output
-        CN_SUFFIX = ".cn" if "cn-" in os.getenv('AWS_REGION') else ""
-        web_socket_url = f"wss://{web_socket_api.api_id}.execute-api.{os.getenv('AWS_REGION')}.amazonaws.com{CN_SUFFIX}/prod"
-        cdk.CfnOutput(self, 'web_socket_api', value=web_socket_url, export_name='WebSocketApi')
+            # langchain_qa_func加wss gw 环境变量
+            langchain_qa_func.add_environment("api_gw", web_socket_api.api_id)
+            # cfn output
+            CN_SUFFIX = ".cn" if "cn-" in os.getenv('AWS_REGION') else ""
+            web_socket_url = f"wss://{web_socket_api.api_id}.execute-api.{os.getenv('AWS_REGION')}.amazonaws.com{CN_SUFFIX}/prod"
+            cdk.CfnOutput(self, 'web_socket_api', value=web_socket_url, export_name='WebSocketApi')
 
 
         if ('knn_faq' in func_selection):
@@ -388,6 +399,8 @@ class LambdaVPCStack(Stack):
             #################################################
             self.opensearch_search_knn_doc_lambda.add_environment("domain_name", web_socket_api.api_id)
             self.opensearch_search_knn_doc_lambda.add_environment("region", os.getenv('AWS_REGION', 'us-west-2'))
+            self.opensearch_search_knn_doc_lambda.add_environment("APPSYNC_ENDPOINT", self.APPSYNC_ENDPOINT)
+            self.opensearch_search_knn_doc_lambda.add_environment("APPSYNC_API_KEY", self.APPSYNC_API_KEY)
 
             # search_knn_doc_resource
             search_knn_doc_resource = api.root.add_resource(

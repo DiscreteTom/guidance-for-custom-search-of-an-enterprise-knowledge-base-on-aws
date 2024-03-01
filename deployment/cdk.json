@@ -58,7 +58,9 @@
     "model_type":"other",
     "enable_content_moderation": false,
     "content_moderation_api_cn": "https://gtf.ai.xingzheai.cn/v2.0/game_chat_ban/detect_text",
-    "content_moderation_api": "https://gtf.ai.xingzheai.cn/v2.0/game_chat_ban/detect_text"
+    "content_moderation_api": "https://gtf.ai.xingzheai.cn/v2.0/game_chat_ban/detect_text",
+    "private_appsync": false,
+    "appsync_api_name": "smart_search_appsync_api"
   }
 }
 
