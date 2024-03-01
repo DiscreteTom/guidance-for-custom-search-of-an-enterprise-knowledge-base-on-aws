@@ -13,11 +13,14 @@ connections = dynamodb.Table(os.environ['TABLE_NAME'])
 def lambda_handler(event, context):
     logger.debug("private-search: %s" % event)
 
-    # connection id is retrieved from the request header
+    # for private search, connection id is retrieved from the request header
+    # and MUST starts with 'private'
     connectionId = event.get('headers',{}).get('connectionId')
-    if connectionId is None:
+    if connectionId is None or connectionId.startswith('private'):
         return { 'statusCode': 400, 
                  'body': 'bad request' }
+    # set back to event to mock as an APIGateway WebSocket event
+    event.get('requestContext', {})['connectionId'] = connectionId
 
     # store in ddb
     result = connections.put_item(Item={ 'id': connectionId})
