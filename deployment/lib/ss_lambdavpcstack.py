@@ -203,6 +203,49 @@ class LambdaVPCStack(Stack):
                                          )
 
         if self.node.try_get_context("private_appsync"):
+            appsync_role = _iam.Role(
+                self, 'appsync_role',
+                assumed_by=_iam.ServicePrincipal('lambda.amazonaws.com')
+            )
+            appsync_role.add_managed_policy(
+                _iam.ManagedPolicy.from_aws_managed_policy_name("AmazonDynamoDBFullAccess")
+            )
+            private_search_lambda = self.define_lambda_function('private_search',
+                    appsync_role, vpc=vpc,
+                    vpc_subnets=vpc_subnets_selection,
+                    timeout=60)
+            private_search_lambda.add_environment("TABLE_NAME", table_name)
+            private_search_resource = api.root.add_resource(
+                'private_search',
+                default_cors_preflight_options=apigw.CorsOptions(
+                    allow_methods=['GET', 'OPTIONS'],
+                    allow_origins=apigw.Cors.ALL_ORIGINS)
+            )
+            private_search_integration = apigw.LambdaIntegration(
+                private_search_lambda,
+                proxy=True,
+                integration_responses=[
+                    apigw.IntegrationResponse(
+                        status_code="200",
+                        response_parameters={
+                            'method.response.header.Access-Control-Allow-Origin': "'*'"
+                        }
+                    )
+                ]
+            )
+            private_search_resource.add_method(
+                'GET',
+                private_search_integration,
+                method_responses=[
+                    apigw.MethodResponse(
+                        status_code="200",
+                        response_parameters={
+                            'method.response.header.Access-Control-Allow-Origin': True
+                        }
+                    )
+                ]
+            )
+
             appsync_api = cdk.aws_appsync.GraphqlApi(self, 'AppSyncAPI', 
                 name=self.node.try_get_context("appsync"),
                 definition=cdk.aws_appsync.Definition.from_file("appsync.graphql"),
