@@ -189,7 +189,7 @@ const SessionInput = ({ data }) => {
       content: { text: query, timestamp: Date.now() },
     });
     if (urlWss.includes('appsync')) {
-      fetch(urlApiGateway, {
+      fetch(`${urlApiGateway}/private_search`, {
         method: 'POST',
         body: JSON.stringify({ action: 'search', configs, query }),
         headers: {
