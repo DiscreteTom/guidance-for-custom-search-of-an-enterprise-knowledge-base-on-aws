@@ -279,9 +279,6 @@ class LambdaVPCStack(Stack):
             websocket_role.add_managed_policy(
                 _iam.ManagedPolicy.from_aws_managed_policy_name("AmazonDynamoDBFullAccess")
             )
-
-            table_name = websocket_table.table_name
-
             connect_function_name = 'websocket_connect'
             websocketconnect = _lambda.Function(
                 self, connect_function_name,
