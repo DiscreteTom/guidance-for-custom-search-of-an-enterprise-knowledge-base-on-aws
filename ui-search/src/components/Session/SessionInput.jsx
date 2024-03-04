@@ -139,6 +139,9 @@ const SessionInput = ({ data }) => {
     [lsAddContentToSessionItem, sessionId, lsSessionList.length]
   );
 
+  // TODO: optimize connection id generation logic
+  const privateConnectionId = useCallback(() => `private-${Date.now()}`, [urlWss])
+
   const initSocket = useCallback(() => {
     try {
       console.log('init WSS');
@@ -148,9 +151,46 @@ const SessionInput = ({ data }) => {
         socket.current = new WebSocket(urlWss, urlWss.includes('appsync') ? ['graphql-ws'] : undefined);
         socket.current.addEventListener('open', onSocketOpen);
         socket.current.addEventListener('close', onSocketClose);
-        socket.current.addEventListener('message', (event) =>
-          onSocketMessage(event.data)
-        );
+
+
+        if (urlWss.includes('appsync')) {
+          // appsync specific activities
+          const header = JSON.parse(atob(new URL(urlWss).searchParams.get('header'))) // TODO: avoid the legacy atob
+          socket.current.addEventListener('open', () => {
+            socket.current.send(JSON.stringify({ type: 'connection_init' }))
+          })
+          socket.current.addEventListener('message', (event) => {
+            const e = JSON.parse(event);
+            if (e.type === 'connection_ack') {
+                socket.current.send(JSON.stringify({
+                  "type": "start",
+                  "id": `${Date.now()}`, // TODO: better id design, prefer UUID
+                  "payload": {
+                    "data": JSON.stringify({
+                      query: "subscription SubscribeToData($name: String!) { subscribe(name: $name) { name data } }",
+                      variables: {
+                        name: privateConnectionId(),
+                      }
+                    }),
+                    "extensions":{
+                      "authorization": {
+                        "x-api-key": header['x-api-key'],
+                        "host": header['host']
+                      }
+                    }
+                  },
+                }))
+            }
+            if (e.type === 'data') {
+              onSocketMessage(e.payload.data.subscribe.data)
+            }
+          })
+        } else {
+          // api gateway websocket message
+          socket.current.addEventListener('message', (event) =>
+            onSocketMessage(event.data)
+          );
+        }
       }
       return true;
     } catch (error) {
@@ -159,9 +199,6 @@ const SessionInput = ({ data }) => {
       return false;
     }
   }, [urlWss, onSocketOpen, onSocketClose, onSocketMessage]);
-
-  // TODO: optimize connection id generation logic
-  const privateConnectionId = useCallback(() => `private-${Date.now()}`, [urlWss])
 
   useEffect(() => {
     // create websocket connection
