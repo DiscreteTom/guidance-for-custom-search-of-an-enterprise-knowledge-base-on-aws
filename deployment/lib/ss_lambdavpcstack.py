@@ -201,6 +201,7 @@ class LambdaVPCStack(Stack):
                                                                           type=dynamodb.AttributeType.STRING),
                                          removal_policy=RemovalPolicy.DESTROY
                                          )
+        table_name = websocket_table.table_name
 
         if self.node.try_get_context("private_appsync"):
             appsync_role = _iam.Role(
