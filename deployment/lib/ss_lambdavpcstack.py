@@ -204,15 +204,28 @@ class LambdaVPCStack(Stack):
         table_name = websocket_table.table_name
 
         if self.node.try_get_context("private_appsync"):
-            appsync_role = _iam.Role(
-                self, 'appsync_role',
+            private_search_lambda_policy = _iam.PolicyStatement(
+                actions=[
+                    'lambda:*',
+                    'apigateway:*',
+                    'dynamodb:*',
+                    'logs:*',
+                    'ec2:CreateNetworkInterface',
+                    'ec2:DescribeNetworkInterfaces',
+                    'ec2:DeleteNetworkInterface',
+                ],
+                resources=['*']  
+            )
+            private_search_lambda_role = _iam.Role(
+                self, 'private_search_lambda_role',
                 assumed_by=_iam.ServicePrincipal('lambda.amazonaws.com')
             )
-            appsync_role.add_managed_policy(
+            private_search_lambda_role.add_to_policy(private_search_lambda_policy)
+            private_search_lambda_role.add_managed_policy(
                 _iam.ManagedPolicy.from_aws_managed_policy_name("AmazonDynamoDBFullAccess")
             )
             private_search_lambda = self.define_lambda_function('private_search',
-                    appsync_role, vpc=vpc,
+                    private_search_lambda_role, vpc=vpc,
                     vpc_subnets=vpc_subnets_selection,
                     timeout=60)
             private_search_lambda.add_environment("TABLE_NAME", table_name)
