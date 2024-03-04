@@ -162,13 +162,13 @@ class LambdaVPCStack(Stack):
                                     statements=[
                                         _iam.PolicyStatement(
                                             effect=_iam.Effect.ALLOW,
-                                            principals=['*'],
+                                            principals=[_iam.AnyPrincipal()],
                                             actions=["execute-api:Invoke"],
                                             resources=["execute-api:/*"],
                                         ),
                                         _iam.PolicyStatement(
                                             effect=_iam.Effect.DENY,
-                                            principals=['*'],
+                                            principals=[_iam.AnyPrincipal()],
                                             actions=["execute-api:Invoke"],
                                             resources=["execute-api:/*"],
                                             conditions={
