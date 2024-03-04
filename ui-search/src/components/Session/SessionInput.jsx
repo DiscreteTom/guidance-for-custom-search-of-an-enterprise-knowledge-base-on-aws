@@ -161,7 +161,7 @@ const SessionInput = ({ data }) => {
   }, [urlWss, onSocketOpen, onSocketClose, onSocketMessage]);
 
   // TODO: optimize connection id generation logic
-  const privateConnectionId = useCallback(() => `${Date.now()}`, [urlWss])
+  const privateConnectionId = useCallback(() => `private-${Date.now()}`, [urlWss])
 
   useEffect(() => {
     // create websocket connection
