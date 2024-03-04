@@ -294,6 +294,22 @@ class LambdaVPCStack(Stack):
                 definition=cdk.aws_appsync.Definition.from_file("appsync.graphql"),
                 visibility=cdk.aws_appsync.Visibility.PRIVATE
                 )
+            none_data_source = appsync_api.add_none_data_source()
+            none_data_source.create_resolver(
+                'AppSyncNoneResolver',
+                type_name='Mutation',
+                field_name='publish',
+                request_mapping_template=cdk.aws_appsync.MappingTemplate.from_string('''
+                    {
+                        "version": "2017-02-28",
+                        "payload": {
+                            "name": "$context.arguments.name",
+                            "data": $util.toJson($context.arguments.data)
+                        }
+                    }
+                '''), 
+                response_mapping_template=cdk.aws_appsync.MappingTemplate.from_string('$util.toJson($context.result)')
+            )
             self.APPSYNC_ENDPOINT = appsync_api.graphql_url
             self.APPSYNC_API_KEY = appsync_api.api_key
             langchain_qa_func.add_environment("APPSYNC_ENDPOINT", self.APPSYNC_ENDPOINT)
