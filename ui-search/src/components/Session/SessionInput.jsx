@@ -145,7 +145,7 @@ const SessionInput = ({ data }) => {
       if (!urlWss) throw new Error('urlWss is not defined');
 
       if (socket.current?.readyState !== WebSocket.OPEN) {
-        socket.current = new WebSocket(urlWss);
+        socket.current = new WebSocket(urlWss, urlWss.includes('appsync') ? ['graphql-ws'] : undefined);
         socket.current.addEventListener('open', onSocketOpen);
         socket.current.addEventListener('close', onSocketClose);
         socket.current.addEventListener('message', (event) =>
