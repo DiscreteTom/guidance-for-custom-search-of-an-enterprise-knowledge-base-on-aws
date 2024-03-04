@@ -151,14 +151,43 @@ class LambdaVPCStack(Stack):
                                                                       vpc_subnets=vpc_subnets_selection)
 
         # api gateway resource
-        api = apigw.RestApi(self, 'smartsearch-api',
-                            default_cors_preflight_options=apigw.CorsOptions(
-                                allow_origins=apigw.Cors.ALL_ORIGINS,
-                                allow_methods=apigw.Cors.ALL_METHODS
-                            ),
-                            endpoint_types=[apigw.EndpointType.REGIONAL]
-                            )
-
+        if self.node.try_get_context("private_rest_api"):
+            api = apigw.RestApi(self, 'smartsearch-api',
+                                default_cors_preflight_options=apigw.CorsOptions(
+                                    allow_origins=apigw.Cors.ALL_ORIGINS,
+                                    allow_methods=apigw.Cors.ALL_METHODS
+                                ),
+                                endpoint_types=[apigw.EndpointType.PRIVATE],
+                                policy=_iam.PolicyDocument(
+                                    statements=[
+                                        _iam.PolicyStatement(
+                                            effect=_iam.Effect.ALLOW,
+                                            principals=['*'],
+                                            actions=["execute-api:Invoke"],
+                                            resources=["execute-api:/*"],
+                                        ),
+                                        _iam.PolicyStatement(
+                                            effect=_iam.Effect.DENY,
+                                            principals=['*'],
+                                            actions=["execute-api:Invoke"],
+                                            resources=["execute-api:/*"],
+                                            conditions={
+                                                "StringNotEquals": {
+                                                    "aws:SourceVpc": vpc.vpc_id
+                                                }
+                                            }
+                                        )
+                                    ]
+                                )
+                                )
+        else:
+            api = apigw.RestApi(self, 'smartsearch-api',
+                                default_cors_preflight_options=apigw.CorsOptions(
+                                    allow_origins=apigw.Cors.ALL_ORIGINS,
+                                    allow_methods=apigw.Cors.ALL_METHODS
+                                ),
+                                endpoint_types=[apigw.EndpointType.REGIONAL]
+                                )
         #
         user_model = api.add_model("UserModel",
                                    schema=apigw.JsonSchema(
