@@ -205,8 +205,11 @@ def lambda_handler(event, context):
     if connectionId.startswith('private'):
         print('appsync post')
         api_res = requests.post(APPSYNC_ENDPOINT, headers = { 'x-api-key': APPSYNC_API_KEY }, json = {
-            'query': 'publish',
-            'variables': { "name": connectionId, 'data': response['body'] },
+            "query":"mutation PublishData($name: String!, $data: AWSJSON!) { publish(name: $name, data: $data) { name } }",
+            "variables": {
+                "name": connectionId,
+                "data": msgbody,
+            }
         })
         print('api_res',api_res)
         return
