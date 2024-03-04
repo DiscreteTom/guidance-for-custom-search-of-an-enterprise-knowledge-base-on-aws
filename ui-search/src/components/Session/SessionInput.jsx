@@ -51,7 +51,7 @@ const SessionInput = ({ data }) => {
     return () => clearInterval(interval);
   }, [loading]);
 
-  const { urlWss } = useLsAppConfigs();
+  const { urlWss, urlApiGateway } = useLsAppConfigs();
   const socket = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
   const {
@@ -160,6 +160,9 @@ const SessionInput = ({ data }) => {
     }
   }, [urlWss, onSocketOpen, onSocketClose, onSocketMessage]);
 
+  // TODO: optimize connection id generation logic
+  const privateConnectionId = useCallback(() => `${Date.now()}`, [urlWss])
+
   useEffect(() => {
     // create websocket connection
     if (socket.current?.readyState !== WebSocket.OPEN) {
@@ -185,8 +188,21 @@ const SessionInput = ({ data }) => {
       type: 'customer',
       content: { text: query, timestamp: Date.now() },
     });
-    socket.current?.send(JSON.stringify({ action: 'search', configs, query }));
+    if (urlWss.includes('appsync')) {
+      fetch(urlApiGateway, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'search', configs, query }),
+        headers: {
+          connectionId: privateConnectionId()
+        }
+      })
+    } else {
+      socket.current?.send(JSON.stringify({ action: 'search', configs, query }));
+    }
   }, [
+    urlWss,
+    urlApiGateway,
+    privateConnectionId,
     lsGetCurSessionConfig,
     sessionId,
     query,
