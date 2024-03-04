@@ -248,7 +248,7 @@ class LambdaVPCStack(Stack):
             )
 
             appsync_api = cdk.aws_appsync.GraphqlApi(self, 'AppSyncAPI', 
-                name=self.node.try_get_context("appsync"),
+                name=self.node.try_get_context("appsync_api_name"),
                 definition=cdk.aws_appsync.Definition.from_file("appsync.graphql"),
                 visibility=cdk.aws_appsync.Visibility.PRIVATE
                 )
