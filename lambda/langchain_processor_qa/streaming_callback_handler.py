@@ -41,7 +41,7 @@ class MyStreamingHandler(StreamingStdOutCallbackHandler ):
 
         if self.connectionId.startswith('private'):
             api_res = requests.post(APPSYNC_ENDPOINT, headers = { 'x-api-key': APPSYNC_API_KEY }, json = {
-                "query":"mutation PublishData($name: String!, $data: AWSJSON!) { publish(name: $name, data: $data) { name } }",
+                "query":"mutation PublishData($name: String!, $data: AWSJSON!) { publish(name: $name, data: $data) { name data } }",
                 "variables": {
                     "name": connectionId,
                     "data": msgbody,
