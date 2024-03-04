@@ -218,7 +218,7 @@ class LambdaVPCStack(Stack):
             private_search_resource = api.root.add_resource(
                 'private_search',
                 default_cors_preflight_options=apigw.CorsOptions(
-                    allow_methods=['GET', 'OPTIONS'],
+                    allow_methods=['POST', 'OPTIONS'],
                     allow_origins=apigw.Cors.ALL_ORIGINS)
             )
             private_search_integration = apigw.LambdaIntegration(
@@ -234,7 +234,7 @@ class LambdaVPCStack(Stack):
                 ]
             )
             private_search_resource.add_method(
-                'GET',
+                'POST',
                 private_search_integration,
                 method_responses=[
                     apigw.MethodResponse(
