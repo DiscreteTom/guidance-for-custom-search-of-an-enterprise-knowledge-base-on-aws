@@ -294,7 +294,7 @@ class LambdaVPCStack(Stack):
                 definition=cdk.aws_appsync.Definition.from_file("appsync.graphql"),
                 visibility=cdk.aws_appsync.Visibility.PRIVATE
                 )
-            none_data_source = appsync_api.add_none_data_source()
+            none_data_source = appsync_api.add_none_data_source('AppSyncNoneDataSource')
             none_data_source.create_resolver(
                 'AppSyncNoneResolver',
                 type_name='Mutation',
