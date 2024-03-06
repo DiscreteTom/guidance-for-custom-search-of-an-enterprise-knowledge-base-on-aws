@@ -8,6 +8,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 dynamodb = boto3.resource('dynamodb')
+lam = boto3.client('lambda')
 connections = dynamodb.Table(os.environ['TABLE_NAME'])
 
 def lambda_handler(event, context):
