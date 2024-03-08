@@ -68,6 +68,13 @@ cdk bootstrap aws://$AWS_ACCOUNT_ID/$AWS_REGION
 "zone_id": "use1-az4",
 ```
 
+如果希望暴露出来的 API 只能通过 VPC 内部来访问（使用 VPC Endpoint），需要将`cdk.json`中的`vpc_deployment`设置为`true`，并将`private_rest_api`和`private_appsync`设置为`true`。配置客户端页面中的 WebSocket URL 时，使用如下命令获取：
+
+```bash
+header=`echo '{"host":"<appsync-host>","x-api-key":"<appsync-api-key>"}' | base64 | tr -d '\n'`
+echo  "wss://<appsync-realtime-api-host>/graphql?header=$header&payload=e30="
+```
+
 ##### 2.4.CDK命令自动化部署
 
 运行下面的命令将验证环境并生成Amazon CloudFormation的json模版
