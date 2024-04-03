@@ -17,7 +17,7 @@ def lambda_handler(event, context):
     # for private search, connection id is retrieved from the request header
     # and MUST starts with 'private'
     connectionId = event.get('headers',{}).get('connectionId')
-    if connectionId is None or connectionId.startswith('private'):
+    if connectionId is None or not connectionId.startswith('private'):
         return { 'statusCode': 400, 
                  'body': 'bad request' }
     # set back to event to mock as an APIGateway WebSocket event
