@@ -208,7 +208,7 @@ def lambda_handler(event, context):
             "query":"mutation PublishData($name: String!, $data: AWSJSON!) { publish(name: $name, data: $data) { name data } }",
             "variables": {
                 "name": connectionId,
-                "data": msgbody,
+                "data": response['body'],
             }
         })
         print('api_res',api_res)
