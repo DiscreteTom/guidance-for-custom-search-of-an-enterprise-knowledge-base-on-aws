@@ -44,7 +44,7 @@ class MyStreamingHandler(StreamingStdOutCallbackHandler ):
                 "query":"mutation PublishData($name: String!, $data: AWSJSON!) { publish(name: $name, data: $data) { name data } }",
                 "variables": {
                     "name": self.connectionId,
-                    "data": msgbody,
+                    "data": response_body,
                 }
             })
             self.api_res = api_res
